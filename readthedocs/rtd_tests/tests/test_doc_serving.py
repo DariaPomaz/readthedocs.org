@@ -12,7 +12,8 @@ from mock import mock_open, patch
 
 from readthedocs.core.views.serve import _serve_symlink_docs
 from readthedocs.builds.constants import STABLE
-from readthedocs.builds.models import Versionfrom readthedocs.projects import constants
+from readthedocs.builds.models import Version
+from readthedocs.projects import constants
 from readthedocs.projects.models import Project
 from readthedocs.rtd_tests.base import RequestFactoryTestMixin
 
@@ -198,36 +199,6 @@ class TestPublicDocs(BaseDocServing):
         PUBLIC_DOMAIN='readthedocs.io',
         ROOT_URLCONF=settings.SUBDOMAIN_URLCONF,
     )
-    def test_default_robots_txt(self):
-        self.public.versions.update(active=True, built=True)
-        self.public.versions.filter(slug=STABLE).update(privacy_level=constants.PRIVATE)
-        response = self.client.get(
-            reverse('sitemap_xml'),
-            HTTP_HOST='public.readthedocs.io',
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content_type, 'application/xml')
-        for version in self.public.versions.filter(privacy_level=constants.PUBLIC):
-            self.assertContains(
-                response,
-                self.public.get_docs_url(
-                    version_slug=version.slug,
-                    lang_slug=self.project.language,
-                    private=False,
-                ),
-            )
-
-        # stable is marked as PRIVATE and should not appear here
-        stable = self.public.versions.get(slug=STABLE)
-        self.assertNotContains(
-            response,
-            self.public.get_docs_url(
-                version_slug=stable.slug,
-                lang_slug=self.project.language,
-                private=True,
-            ),
-        )
-
     def test_sitemap_xml(self):
         self.public.versions.update(active=True)
         private_version = fixture.get(
